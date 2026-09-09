@@ -1,0 +1,26 @@
+{
+  "id": "SYN-PKT-BASE-01",
+  "label": "Baseline — messy van notes",
+  "fiction": "Synthetic site SYN-SITE-14. Not a real job.",
+  "captured_as": "free-text notes + partial form",
+  "fields": {
+    "enclosure_id": "SYN-ENC-14",
+    "enclosure_type": "",
+    "site_desc": "pole line, mid-span, dark",
+    "cable_id": "",
+    "fiber_count": "288",
+    "work_type": "mid-sheath splice",
+    "splice_trays": "",
+    "photo_before": true,
+    "photo_after": false,
+    "test_reading_db": "",
+    "timestamp_iso": "",
+    "tech_initials": "TJ"
+  },
+  "notes": "432-count sheath I think — wrote 288 first. After shot still on the camera. OTDR later.",
+  "reentry": [
+    "fiber_count 288 → 432 after office bounce",
+    "after photo attached next morning",
+    "test reading added when DLR showed up"
+  ]
+}

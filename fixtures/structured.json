@@ -1,0 +1,22 @@
+{
+  "id": "SYN-PKT-GATE-01",
+  "label": "Structured — gated closeout",
+  "fiction": "Synthetic site SYN-SITE-14. Not a real job.",
+  "captured_as": "required-field gate before submit",
+  "fields": {
+    "enclosure_id": "SYN-ENC-14",
+    "enclosure_type": "448 dome",
+    "site_desc": "mid-span pole enclosure, overnight OSP",
+    "cable_id": "SYN-SH-14A",
+    "fiber_count": "432",
+    "work_type": "mid-sheath splice",
+    "splice_trays": "6",
+    "photo_before": true,
+    "photo_after": true,
+    "test_reading_db": "0.21",
+    "timestamp_iso": "2026-09-09T02:14:00-04:00",
+    "tech_initials": "TJ"
+  },
+  "notes": "All 12 required items present before submit. No office bounce in this synthetic run.",
+  "reentry": []
+}
