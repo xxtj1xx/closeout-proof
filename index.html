@@ -1,1 +1,135 @@
-See live deploy; file mirrored from app.html working form.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Closeout Proof — working synthetic OSP gate</title>
+  <style>
+    :root { --bg:#0b0f14; --panel:#121821; --line:#243042; --text:#e7eef7; --muted:#8ea0b5; --good:#3dd68c; --bad:#ff6b6b; --warn:#f5c542; --accent:#5b8cff; }
+    * { box-sizing: border-box; }
+    body { margin:0; font:15px/1.45 "IBM Plex Sans","Segoe UI",sans-serif; background:var(--bg); color:var(--text); }
+    header, main, footer { max-width:1120px; margin:0 auto; padding:20px; }
+    .kicker { color:var(--warn); font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+    h1 { margin:6px 0 8px; font-size:26px; }
+    .lede { color:var(--muted); max-width:70ch; }
+    .row { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0; }
+    button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:9px 12px; font-weight:600; cursor:pointer; font-size:14px; }
+    button.ghost { background:transparent; border:1px solid var(--line); color:var(--text); }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .layout { display:grid; grid-template-columns: 1.2fr .8fr; gap:16px; }
+    @media (max-width:900px) { .layout { grid-template-columns:1fr; } }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; }
+    h2 { margin:0 0 10px; font-size:16px; }
+    label { display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+    input[type=text], input[type=number], textarea, select, input[type=file] {
+      width:100%; background:#0a0e13; color:var(--text); border:1px solid var(--line);
+      border-radius:8px; padding:8px 10px; font:inherit;
+    }
+    textarea { min-height:70px; }
+    .miss { border-color:var(--bad) !important; }
+    .ok { color:var(--good); } .no { color:var(--bad); } .warn { color:var(--warn); }
+    .score { font-size:34px; font-weight:700; }
+    .checks { padding-left:18px; }
+    pre { background:#0a0e13; border:1px solid var(--line); border-radius:8px; padding:10px; overflow:auto; font-size:12px; max-height:280px; }
+    .banner { padding:10px 12px; border-radius:8px; margin:8px 0; }
+    .fail { background:#2a1212; border:1px solid #5c2222; }
+    .pass { background:#10261b; border:1px solid #1d5a3a; }
+    footer { color:var(--muted); font-size:12px; }
+    a { color:var(--accent); }
+  </style>
+</head>
+<body>
+<header>
+  <div class="kicker">Public-safe · synthetic only · not SpliceFlow production</div>
+  <h1>Closeout Proof</h1>
+  <p class="lede">Fill a synthetic OSP packet. Notes mode accepts junk and the office bounces it. Gated mode locks Submit until all 12 required items are present.</p>
+  <div class="row">
+    <button type="button" class="ghost" id="mode-notes">Mode: Notes (fail open)</button>
+    <button type="button" class="ghost" id="mode-gate">Mode: Gated (fail closed)</button>
+    <button type="button" class="ghost" id="load-messy">Load messy packet</button>
+    <button type="button" class="ghost" id="load-clean">Load complete packet</button>
+    <button type="button" class="ghost" id="reset">Reset</button>
+  </div>
+</header>
+<main class="layout">
+  <form class="card" id="form" autocomplete="off">
+    <h2>Field packet · <span id="mode-label">Gated</span></h2>
+    <label>Enclosure ID *</label>
+    <input name="enclosure_id" type="text" placeholder="SYN-ENC-14" />
+    <label>Enclosure type *</label>
+    <select name="enclosure_type"><option value="">Select</option><option>288 dome</option><option>448 dome</option><option>576 case</option><option>handhole</option></select>
+    <label>Site description *</label>
+    <input name="site_desc" type="text" />
+    <label>Cable / sheath ID *</label>
+    <input name="cable_id" type="text" />
+    <label>Fiber count *</label>
+    <input name="fiber_count" type="number" min="1" />
+    <label>Work type *</label>
+    <select name="work_type"><option value="">Select</option><option>mid-sheath splice</option><option>cutover</option><option>repair</option><option>new build</option></select>
+    <label>Splice trays *</label>
+    <input name="splice_trays" type="number" min="1" />
+    <label>Before photo *</label>
+    <input id="photo_before" type="file" accept="image/*" />
+    <div id="thumb-before"></div>
+    <label>After photo *</label>
+    <input id="photo_after" type="file" accept="image/*" />
+    <div id="thumb-after"></div>
+    <label>Test reading (dB) *</label>
+    <input name="test_reading_db" type="text" />
+    <label>Timestamp *</label>
+    <div class="row" style="margin:0">
+      <input name="timestamp_iso" type="text" style="flex:1" />
+      <button type="button" class="ghost" id="stamp">Stamp now</button>
+    </div>
+    <label>Tech initials *</label>
+    <input name="tech_initials" type="text" maxlength="4" />
+    <label>Notes</label>
+    <textarea name="notes"></textarea>
+    <div class="row">
+      <button type="submit" id="submit">Submit packet</button>
+      <button type="button" class="ghost" id="export">Download JSON</button>
+    </div>
+    <div id="result"></div>
+  </form>
+  <aside>
+    <div class="card">
+      <h2>Live score</h2>
+      <div class="score" id="score">0 / 12</div>
+      <p id="next" class="warn"></p>
+      <ul class="checks" id="checks"></ul>
+      <p class="lede" id="reentry">Re-entry events: 0</p>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>Office view</h2>
+      <pre id="office">No packet submitted yet.</pre>
+    </div>
+  </aside>
+</main>
+<footer>Taylor J. Javery · CFOT · SYN-SITE-14 · <a href="https://github.com/xxtj1xx/closeout-proof">github.com/xxtj1xx/closeout-proof</a></footer>
+<script>
+const KEYS=[["enclosure_id","Enclosure ID"],["enclosure_type","Enclosure type"],["site_desc","Site description"],["cable_id","Cable / sheath ID"],["fiber_count","Fiber count"],["work_type","Work type"],["splice_trays","Splice trays"],["photo_before","Before photo"],["photo_after","After photo"],["test_reading_db","Test reading"],["timestamp_iso","Timestamp"],["tech_initials","Tech initials"]];
+const MESSY={enclosure_id:"SYN-ENC-14",enclosure_type:"",site_desc:"pole line, mid-span, dark",cable_id:"",fiber_count:"288",work_type:"mid-sheath splice",splice_trays:"",test_reading_db:"",timestamp_iso:"",tech_initials:"TJ",notes:"432-count sheath I think — wrote 288 first. After shot still on the camera. OTDR later."};
+const CLEAN={enclosure_id:"SYN-ENC-14",enclosure_type:"448 dome",site_desc:"mid-span pole enclosure, overnight OSP",cable_id:"SYN-SH-14A",fiber_count:"432",work_type:"mid-sheath splice",splice_trays:"6",test_reading_db:"0.21",timestamp_iso:"",tech_initials:"TJ",notes:"All required items present."};
+const state={mode:"gate",photos:{photo_before:false,photo_after:false},submitted:false,firstSnapshot:null,reentry:[]};
+const form=document.getElementById("form");
+function readFields(){const fd=new FormData(form);const f={};for(const[k] of KEYS){f[k]=k.startsWith("photo_")?state.photos[k]:String(fd.get(k)||"").trim();}f.notes=String(fd.get("notes")||"").trim();return f;}
+function filled(v){return typeof v==="boolean"?v===true:String(v||"").trim().length>0;}
+function score(f){const missing=[],flags=[];let present=0;for(const[k,label] of KEYS){const el=form.elements[k];if(filled(f[k])){present++;if(el)el.classList.remove("miss");}else{missing.push(label);flags.push("Missing: "+label);if(el)el.classList.add("miss");}}if(f.fiber_count==="288"&&/432/.test(f.notes||""))flags.push("Count mismatch: notes say 432, field says 288");if(/after shot|photo/i.test(f.notes||"")&&!f.photo_after)flags.push("Photo mentioned in notes but not attached");return{present,missing,flags,next:missing[0]||"Packet complete."};}
+function render(){const f=readFields();const s=score(f);document.getElementById("score").innerHTML=s.present+' <span style="font-size:16px;color:var(--muted)">/ 12</span>';document.getElementById("next").textContent="Next: "+s.next;document.getElementById("checks").innerHTML=KEYS.map(([k,l])=>`<li class="${filled(f[k])?"ok":"no"}">${filled(f[k])?"✓":"○"} ${l}</li>`).join("");document.getElementById("reentry").textContent="Re-entry events: "+state.reentry.length+(state.reentry.length?" — "+state.reentry.join("; "):"");document.getElementById("mode-label").textContent=state.mode==="gate"?"Gated":"Notes";const btn=document.getElementById("submit");if(state.mode==="gate"&&s.missing.length){btn.disabled=true;btn.textContent="Submit locked — "+s.missing.length+" required left";}else{btn.disabled=false;btn.textContent=state.mode==="gate"?"Submit packet":"Submit anyway (office will bounce)";}}
+function fill(obj,photos){for(const[k,v] of Object.entries(obj)){if(form.elements[k]!=null)form.elements[k].value=v;}state.photos={...photos};document.getElementById("thumb-before").innerHTML=photos.photo_before?"<span class='ok'>Before attached (preset)</span>":"";document.getElementById("thumb-after").innerHTML=photos.photo_after?"<span class='ok'>After attached (preset)</span>":"";render();}
+function hookPhoto(kind,input,thumb){input.addEventListener("change",()=>{const file=input.files&&input.files[0];state.photos[kind]=!!file;thumb.innerHTML="";if(file){const img=document.createElement("img");img.alt=kind;img.src=URL.createObjectURL(file);thumb.appendChild(img);}render();});}
+form.addEventListener("input",render);
+hookPhoto("photo_before",document.getElementById("photo_before"),document.getElementById("thumb-before"));
+hookPhoto("photo_after",document.getElementById("photo_after"),document.getElementById("thumb-after"));
+document.getElementById("stamp").onclick=()=>{form.elements.timestamp_iso.value=new Date().toISOString();render();};
+document.getElementById("mode-notes").onclick=()=>{state.mode="notes";render();};
+document.getElementById("mode-gate").onclick=()=>{state.mode="gate";render();};
+document.getElementById("load-messy").onclick=()=>fill(MESSY,{photo_before:true,photo_after:false});
+document.getElementById("load-clean").onclick=()=>fill({...CLEAN,timestamp_iso:new Date().toISOString()},{photo_before:true,photo_after:true});
+document.getElementById("reset").onclick=()=>{form.reset();state.photos={photo_before:false,photo_after:false};state.submitted=false;state.firstSnapshot=null;state.reentry=[];document.getElementById("thumb-before").innerHTML="";document.getElementById("thumb-after").innerHTML="";document.getElementById("office").textContent="No packet submitted yet.";document.getElementById("result").innerHTML="";render();};
+form.addEventListener("submit",(e)=>{e.preventDefault();const f=readFields();const s=score(f);if(state.mode==="gate"&&s.missing.length){document.getElementById("result").innerHTML='<div class="banner fail">Blocked. Office never sees this packet. Fix: '+s.missing.join(", ")+'.</div>';render();return;}if(state.submitted&&state.firstSnapshot){for(const[k,l] of KEYS){if(String(state.firstSnapshot[k])!==String(f[k])){const msg=l+" changed after first submit";if(!state.reentry.includes(msg))state.reentry.push(msg);}}}else state.firstSnapshot={...f};state.submitted=true;const packet={id:"SYN-PKT-LIVE-01",mode:state.mode,submitted_at:new Date().toISOString(),fields:f,score:{present:s.present,missing:s.missing.length,flags:s.flags},reentry:state.reentry,fiction:"Synthetic site SYN-SITE-14. Not a real job."};document.getElementById("result").innerHTML=state.mode==="notes"&&s.missing.length?'<div class="banner fail">Accepted in Notes mode — office bounce incoming.</div>':'<div class="banner pass">Accepted. Packet is complete.</div>';document.getElementById("office").textContent=JSON.stringify(packet,null,2);render();});
+document.getElementById("export").onclick=()=>{const f=readFields();const s=score(f);const blob=new Blob([JSON.stringify({fields:f,score:s,reentry:state.reentry,fiction:"SYN-SITE-14"},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="syn-closeout-packet.json";a.click();};
+fill(MESSY,{photo_before:true,photo_after:false});
+</script>
+</body>
+</html>
